@@ -79,10 +79,17 @@ def download_highest_resolution(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     ydl_opts: dict[str, object] = {
-        # bestvideo+bestaudio picks the highest-res video stream and best
-        # audio stream separately and muxes them; the fallback keeps this
-        # working even if no split streams are available for a given video.
-        "format": "bestvideo+bestaudio/best",
+        # Prefer H.264 (avc1) video + AAC (mp4a) audio: these decode natively
+        # in QuickTime, iOS/Safari, and virtually every hardware player.
+        # YouTube's actual *highest*-resolution streams (4K/8K) are often
+        # VP9 or AV1 only, which QuickTime can't decode — the tradeoff here
+        # is capping at H.264's max available resolution (usually 1080p,
+        # occasionally higher) in exchange for guaranteed playback. Falls
+        # back to bestvideo+bestaudio/best if no H.264/AAC pair exists.
+        "format": (
+            "bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/"
+            "bestvideo+bestaudio/best"
+        ),
         "merge_output_format": "mp4",
         "outtmpl": str(output_dir / filename_template),
         "noplaylist": True,
